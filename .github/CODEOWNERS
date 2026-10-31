@@ -1,0 +1,11 @@
+# Default owner for everything
+* @OmarZabadani
+
+# Python source code
+*.py @OmarZabadani
+
+# Project configuration
+pyproject.toml @OmarZabadani
+
+# GitHub Actions
+.github/workflows/ @OmarZabadani
