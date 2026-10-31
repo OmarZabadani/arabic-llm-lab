@@ -1,3 +1,7 @@
+"""
+checks whether BPE implementation works correctly.
+"""
+
 import pytest
 
 from lab.tokenizer.bpe import ByteLevelBPE
