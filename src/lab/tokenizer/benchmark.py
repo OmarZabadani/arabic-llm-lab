@@ -1,7 +1,7 @@
 import random
 from pathlib import Path
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from lab.tokenizer.bpe import ByteLevelBPE
 
@@ -59,13 +59,12 @@ def evaluate_custom(
 
 
 def evaluate_pretrained(
-    tokenizer: object,
+    tokenizer: PreTrainedTokenizerBase,
     lines: list[str],
 ) -> tuple[int, int]:
     """Evaluate a pretrained tokenizer."""
     token_count = sum(
-        len(tokenizer.encode(line, add_special_tokens=False))  # type: ignore[attr-defined]
-        for line in lines
+        len(tokenizer.encode(line, add_special_tokens=False)) for line in lines
     )
     word_count = sum(count_words(line) for line in lines)
 

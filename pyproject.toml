@@ -45,6 +45,10 @@ python_version = "3.13"
 strict = true
 mypy_path = "src"
 
+[[tool.mypy.overrides]]
+module = ["datasets.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=lab --cov-report=term-missing"
