@@ -1,19 +1,27 @@
 ## Description
 
-\<!-- Briefly describe what this PR changes and why. -->
+<!-- Describe the purpose of this change and the problem it addresses. -->
 
 ## Changes
 
--
+<!-- Summarize the changes made. -->
+- 
 
 ## Testing
 
-- [ ] Tests pass locally
-- [ ] Ruff checks pass
-- [ ] Mypy checks pass
+- [ ] `uv run pytest`
+- [ ] `uv run ruff check .`
+- [ ] `uv run ruff format --check .`
+- [ ] `uv run mypy ./src`
 
-## Checklist
+## Project Checklist
 
-- [ ] Code follows project conventions
-- [ ] Documentation updated if needed
-- [ ] No unrelated changes included
+- [ ] Changes follow the existing project structure and coding conventions.
+- [ ] Tests added or updated where necessary.
+- [ ] Documentation updated where necessary.
+- [ ] No unrelated files or changes included.
+- [ ] CI workflow passes.
+
+## Related Issue
+
+<!-- Link the related GitHub issue, if applicable. -->
