@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python tooling and test output
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local secrets and environment settings
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Experiment tracking and generated training output
+wandb/
+runs/
+outputs/
+checkpoints/
+lightning_logs/
+
+# Downloaded datasets and local caches
+.cache/
+data/raw/
+data/processed/
+
+# Model artifacts (avoid committing large files)
+*.safetensors
+*.pt
+*.pth
+*.ckpt
