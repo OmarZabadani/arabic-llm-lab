@@ -53,3 +53,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=lab --cov-report=term-missing"
+
+[[tool.mypy.overrides]]
+module = ["datasets", "datasets.*", "pyarrow", "pyarrow.*"]
+ignore_missing_imports = true
