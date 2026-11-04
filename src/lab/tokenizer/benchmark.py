@@ -3,10 +3,12 @@ from pathlib import Path
 
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
-from lab.tokenizer.bpe import ByteLevelBPE
+from lab.tokenizer.fast_bpe import FastByteLevelBPE
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DATA_PATH = PROJECT_ROOT / "data" / "benchmark.txt"
+
+ARABIC_DATA_PATH = PROJECT_ROOT / "data" / "arabic_train_clean.txt"
+ENGLISH_DATA_PATH = PROJECT_ROOT / "data" / "benchmark.txt"
 REPORT_PATH = PROJECT_ROOT / "reports" / "tokenizer_benchmark.md"
 
 VOCAB_SIZE = 512
@@ -32,6 +34,25 @@ def tokens_per_word(token_count: int, word_count: int) -> float:
     return token_count / word_count
 
 
+def load_lines(path: Path) -> list[str]:
+    """Load nonempty lines from a text file."""
+    if not path.is_file():
+        raise FileNotFoundError(f"Dataset not found: {path}")
+
+    with path.open("r", encoding="utf-8") as file:
+        return [line.strip() for line in file if line.strip()]
+
+
+def contains_arabic(text: str) -> bool:
+    """Check whether text contains Arabic characters."""
+    return any("\u0600" <= char <= "\u06ff" for char in text)
+
+
+def contains_english(text: str) -> bool:
+    """Check whether text contains Latin letters."""
+    return any(("a" <= char.lower() <= "z") for char in text)
+
+
 def split_language_data(
     lines: list[str],
 ) -> tuple[list[str], list[str]]:
@@ -48,7 +69,7 @@ def split_language_data(
 
 
 def evaluate_custom(
-    tokenizer: ByteLevelBPE,
+    tokenizer: FastByteLevelBPE,
     lines: list[str],
 ) -> tuple[int, int]:
     """Evaluate the custom BPE tokenizer."""
@@ -72,25 +93,17 @@ def evaluate_pretrained(
 
 
 def main() -> None:
-    """Train on one split and evaluate on unseen sentences."""
-    if not DATA_PATH.exists():
-        raise FileNotFoundError(f"Benchmark dataset not found: {DATA_PATH}")
+    """Train and compare tokenizers on held-out Arabic and English text."""
+    arabic_lines = load_lines(ARABIC_DATA_PATH)
 
-    lines = [
-        line.strip()
-        for line in DATA_PATH.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+    english_lines = [
+        line
+        for line in load_lines(ENGLISH_DATA_PATH)
+        if contains_english(line) and not contains_arabic(line)
     ]
 
-    arabic_lines = [
-        line for line in lines if any("\u0600" <= char <= "\u06ff" for char in line)
-    ]
-    english_lines = [line for line in lines if line not in arabic_lines]
-
-    if not arabic_lines or not english_lines:
-        raise ValueError(
-            "benchmark.txt must contain both Arabic and English sentences."
-        )
+    if not english_lines:
+        raise ValueError("No English-only sentences found in benchmark.txt.")
 
     arabic_train, arabic_test = split_language_data(arabic_lines)
     english_train, english_test = split_language_data(english_lines)
@@ -102,11 +115,14 @@ def main() -> None:
         "English": english_test,
     }
 
-    print(f"Training sentences: {len(train_lines)}")
-    print(f"Testing sentences: {len(arabic_test) + len(english_test)}")
+    print(f"Arabic articles: {len(arabic_lines):,}")
+    print(f"English sentences: {len(english_lines):,}")
+    print(f"Training sentences: {len(train_lines):,}")
+    print(f"Testing sentences: {len(arabic_test) + len(english_test):,}")
 
-    print("\nTraining custom BPE tokenizer...")
-    custom_tokenizer = ByteLevelBPE.train(
+    print("\nTraining custom Rust-backed BPE tokenizer...")
+
+    custom_tokenizer = FastByteLevelBPE.train(
         train_lines,
         vocab_size=VOCAB_SIZE,
     )
@@ -114,7 +130,8 @@ def main() -> None:
     results: dict[str, dict[str, tuple[int, int]]] = {}
 
     for name, model_name in TOKENIZERS.items():
-        print(f"Loading {name} tokenizer...")
+        print(f"\nLoading {name} tokenizer...")
+
         tokenizer = AutoTokenizer.from_pretrained(model_name)
 
         results[name] = {
@@ -130,13 +147,16 @@ def main() -> None:
     report = [
         "# Held-Out Tokenizer Benchmark",
         "",
-        f"- Total sentences: {len(lines)}",
-        f"- Training sentences: {len(train_lines)}",
-        f"- Testing sentences: {len(arabic_test) + len(english_test)}",
+        f"- Arabic articles: {len(arabic_lines):,}",
+        f"- English sentences: {len(english_lines):,}",
+        f"- Arabic training articles: {len(arabic_train):,}",
+        f"- English training sentences: {len(english_train):,}",
+        f"- Arabic testing articles: {len(arabic_test):,}",
+        f"- English testing sentences: {len(english_test):,}",
         f"- Training split: {(1 - TEST_RATIO) * 100:.0f}%",
         f"- Testing split: {TEST_RATIO * 100:.0f}%",
         f"- Random seed: {RANDOM_SEED}",
-        f"- Custom BPE vocabulary size: {len(custom_tokenizer.vocab)}",
+        f"- Custom BPE vocabulary size: {custom_tokenizer.vocab_size}",
         "",
         "## Evaluation Results",
         "",
@@ -149,8 +169,8 @@ def main() -> None:
             ratio = tokens_per_word(token_count, word_count)
 
             report.append(
-                f"| {tokenizer_name} | {language} | {word_count} "
-                f"| {token_count} | {ratio:.3f} |"
+                f"| {tokenizer_name} | {language} | {word_count:,} "
+                f"| {token_count:,} | {ratio:.3f} |"
             )
 
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
